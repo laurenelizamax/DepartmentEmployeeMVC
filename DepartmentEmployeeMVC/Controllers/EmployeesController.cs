@@ -30,11 +30,11 @@ namespace DepartmentEmployeeMVC.Controllers
 
         // GET: Employees
         public ActionResult Index()
-        { 
-            using(SqlConnection conn = Connection)
+        {
+            using (SqlConnection conn = Connection)
             {
                 conn.Open();
-                using(SqlCommand cmd = conn.CreateCommand())
+                using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"SELECT Id, FirstName, LastName, DepartmentId FROM Employee";
 
@@ -42,7 +42,7 @@ namespace DepartmentEmployeeMVC.Controllers
 
                     var employees = new List<Employee>();
 
-                    while(reader.Read())
+                    while (reader.Read())
                     {
                         employees.Add(new Employee
                         {
@@ -109,11 +109,25 @@ namespace DepartmentEmployeeMVC.Controllers
         // POST: Employees/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(Employee employee)
         {
             try
             {
-                // TODO: Add insert logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO Employee (FirstName, LastName, DepartmentId)
+                                            VALUES (@firstName, @lastName, @departmentId)";
+
+                        cmd.Parameters.Add(new SqlParameter("@firstName", employee.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", employee.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@departmentId", employee.DepartmentId));
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
 
                 return RedirectToAction(nameof(Index));
             }
@@ -149,19 +163,56 @@ namespace DepartmentEmployeeMVC.Controllers
         // GET: Employees/Delete/5
         public ActionResult Delete(int id)
         {
-            return View();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, FirstName, LastName FROM Employee WHERE Id = @id";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    var reader = cmd.ExecuteReader();
+
+                    if (reader.Read())
+                    {
+                        var employee = new Employee
+                        {
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                            Id = reader.GetInt32(reader.GetOrdinal("Id"))
+                        };
+
+                        reader.Close();
+                        return View(employee);
+                    }
+                    return NotFound();
+                }
+            }
         }
 
         // POST: Employees/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public ActionResult Delete(int id, Employee employee)
         {
             try
             {
-                // TODO: Add delete logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"DELETE FROM Employee WHERE Id = @id";
 
-                return RedirectToAction(nameof(Index));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        cmd.ExecuteNonQuery();
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
+
             }
             catch
             {
