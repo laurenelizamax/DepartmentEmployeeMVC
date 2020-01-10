@@ -117,15 +117,26 @@ namespace DepartmentEmployeeMVC.Controllers
         {
             return View();
         }
-
         // POST: Departments/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(Department department)
         {
             try
             {
-                // TODO: Add insert logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO Department (DeptName)
+                                            VALUES (@deptName)";
+
+                        cmd.Parameters.Add(new SqlParameter("@deptName", department.Name));
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
 
                 return RedirectToAction(nameof(Index));
             }
