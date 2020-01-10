@@ -154,6 +154,12 @@ namespace DepartmentEmployeeMVC.Controllers
         // GET: Employees/Edit/5
         public ActionResult Edit(int id)
         {
+            var departments = GetDepartments().Select(d => new SelectListItem
+            {
+                Text = d.Name,
+                Value = d.Id.ToString()
+            }).ToList();
+
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
@@ -178,8 +184,15 @@ namespace DepartmentEmployeeMVC.Controllers
                         };
 
                         reader.Close();
-                        return View(employee);
+
+                        var viewModel = new EmployeeViewModel
+                        {
+                            Employee = employee,
+                            Departments = departments
+                        };
+                        return View(viewModel);
                     }
+
                     reader.Close();
                     return NotFound();
                 }
@@ -187,11 +200,12 @@ namespace DepartmentEmployeeMVC.Controllers
 
         }
 
-        // POST: Departments/Edit/5
+        // POST: Employees/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, Department department)
+        public ActionResult Edit(int id, Employee employee)
         {
+
             try
             {
                 using (SqlConnection conn = Connection)
@@ -199,12 +213,16 @@ namespace DepartmentEmployeeMVC.Controllers
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
-                        cmd.CommandText = @"UPDATE Department
-                                            SET DeptName = @deptName
+                        cmd.CommandText = @"UPDATE Employee 
+                                            Set FirstName = @firstName, 
+                                            LastName = @lastName, 
+                                            DepartmentId = @departmentId
                                             WHERE Id = @id";
 
-                        cmd.Parameters.Add(new SqlParameter("@deptName", department.Name));
-                        cmd.Parameters.Add(new SqlParameter("@id", id));
+                        cmd.Parameters.Add(new SqlParameter("@firstName", employee.FirstName));
+                    cmd.Parameters.Add(new SqlParameter("@lastName", employee.LastName));
+                    cmd.Parameters.Add(new SqlParameter("@departmentId", employee.DepartmentId));
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         cmd.ExecuteNonQuery();
                     }
@@ -212,7 +230,7 @@ namespace DepartmentEmployeeMVC.Controllers
 
                 return RedirectToAction(nameof(Index));
             }
-            catch
+            catch(Exception ex)
             {
                 return View();
             }
