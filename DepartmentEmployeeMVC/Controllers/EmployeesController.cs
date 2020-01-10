@@ -4,8 +4,10 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using DepartmentEmployeeMVC.Models;
+using DepartmentEmployeeMVC.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
 
 namespace DepartmentEmployeeMVC.Controllers
@@ -103,7 +105,19 @@ namespace DepartmentEmployeeMVC.Controllers
         // GET: Employees/Create
         public ActionResult Create()
         {
-            return View();
+            var departments = GetDepartments().Select(d => new SelectListItem
+            {
+                Text = d.Name,
+                Value = d.Id.ToString()
+            }).ToList();
+
+            var viewModel = new EmployeeViewModel()
+            {
+                Employee = new Employee(),
+                Departments = departments
+            };
+
+            return View(viewModel);
         }
 
         // POST: Employees/Create
@@ -173,10 +187,10 @@ namespace DepartmentEmployeeMVC.Controllers
 
         }
 
-        // POST: Employees/Edit/5
+        // POST: Departments/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, Employee employee)
+        public ActionResult Edit(int id, Department department)
         {
             try
             {
@@ -185,15 +199,11 @@ namespace DepartmentEmployeeMVC.Controllers
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
-                        cmd.CommandText = @"UPDATE Employee
-                                            SET FirstName = @firstName,
-                                            LastName = @lastName,
-                                            DepartmentId = @departmentId
+                        cmd.CommandText = @"UPDATE Department
+                                            SET DeptName = @deptName
                                             WHERE Id = @id";
 
-                        cmd.Parameters.Add(new SqlParameter("@firstName", employee.FirstName));
-                        cmd.Parameters.Add(new SqlParameter("@lastName", employee.LastName));
-                        cmd.Parameters.Add(new SqlParameter("@departmentId", employee.DepartmentId));
+                        cmd.Parameters.Add(new SqlParameter("@deptName", department.Name));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         cmd.ExecuteNonQuery();
@@ -265,6 +275,37 @@ namespace DepartmentEmployeeMVC.Controllers
             catch
             {
                 return View();
+            }
+        }
+
+        // GET: Departments List
+        private List<Department> GetDepartments()
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, DeptName 
+                                       FROM Department";
+
+                    var reader = cmd.ExecuteReader();
+
+                    var departments = new List<Department>();
+
+                    while (reader.Read())
+                    {
+                        departments.Add(new Department
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("DeptName"))
+                        });
+                    }
+
+                    reader.Close();
+
+                    return departments;
+                }
             }
         }
     }
